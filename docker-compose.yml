@@ -50,7 +50,6 @@ services:
             POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
         volumes:
             - 'NexaAIOne-pgsql:/var/lib/postgresql/data'
-#            - './docker/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
         networks:
             - NexaAIOne
         healthcheck:

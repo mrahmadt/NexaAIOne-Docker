@@ -52,6 +52,7 @@ fi
 
 
 
+
 echo COMPANY=Company > .env
 # echo USER_NAME=$USER_NAME >> .env
 # echo USER_EMAIL=$USER_EMAIL >> .env
@@ -62,43 +63,62 @@ cat docker/NexaAIOne/.env >> .env
 echo ""
 echo ""
 echo "Running NexaAIOne (docker-compose)"
-# docker-compose up -d --build
-docker-compose build && docker-compose up -d
+
+# docker builder prune
+# docker rmi -f $(docker images -a -q)
+docker-compose down
+docker-compose build --no-cache && docker-compose up -d
+
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 
 echo "Waiting for NexaAIOne to start"
 until docker-compose exec -T NexaAIOne php artisan --version > /dev/null 2>&1; do
      sleep 1
 done
 
-
-docker-compose exec -T NexaAIOne artisan migrate --seed --force
-
-
-echo ""
-echo "=============================="
-echo "== Admin Portal Credentials =="
-echo "=============================="
-echo ""
-
-echo "Please enter the name of the admin:"
-read USER_NAME
-
-echo ""
-echo "A valid and unique email address:"
-read USER_EMAIL
-
-echo ""
-echo "Password for the admin (min. 8 characters):"
-read USER_PASSWORD
-
-## NexaAIOne add user to admin
-docker-compose exec -T NexaAIOne php artisan make:filament-user --name "${USER_NAME}" --email "${USER_EMAIL}" --password "${USER_PASSWORD}" --no-interaction
-
-
-if [ $? -eq 0 ]; then
-    echo ""
-    echo ""
-    echo "Success! log in at http://localhost/admin/login"
-    echo ""
+read -p "Would you like to create the database? (Y/n) " create_database
+if [[ $create_database =~ ^[Yy]$ ]]; then
+    docker-compose exec -T NexaAIOne php artisan migrate --seed --force
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
+else
+    echo "Use this command to create the database"
+    echo "docker-compose exec -T NexaAIOne php artisan migrate --seed --force"
     echo ""
 fi
+
+
+
+read -p "Would you like to create an admin user? (Y/n) " create_admin
+if [[ $create_admin =~ ^[Yy]$ ]]; then
+    echo ""
+    echo "=============================="
+    echo "== Admin Portal Credentials =="
+    echo "=============================="
+    echo ""
+
+    echo "Please enter the name of the admin:"
+    read USER_NAME
+
+    echo ""
+    echo "A valid and unique email address:"
+    read USER_EMAIL
+
+    echo ""
+    echo "Password for the admin (min. 8 characters):"
+    read USER_PASSWORD
+
+
+    ## NexaAIOne add user to admin
+    docker-compose exec -T NexaAIOne php artisan make:filament-user --name "${USER_NAME}" --email "${USER_EMAIL}" --password "${USER_PASSWORD}" --no-interaction
+else
+    echo "Use this command to create a new admin user"
+    echo "docker-compose exec -T NexaAIOne php artisan make:filament-user"
+    echo ""
+fi
+echo ""
+echo "Success! log in at http://localhost/admin/login"
+echo ""

@@ -1,4 +1,5 @@
 server {
+    # Disable HTTP, only HTTPS
     # listen       80;
     # listen  [::]:80;
     
