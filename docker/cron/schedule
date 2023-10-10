@@ -1,0 +1,1 @@
+* * * * * www-data /usr/bin/php /var/www/html/NexaAIOne/artisan schedule:run

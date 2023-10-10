@@ -1,0 +1,75 @@
+version: '3.5'
+services:
+    NexaAIOne:
+        container_name: NexaAIOne
+        build:
+            context: ./docker
+            dockerfile: NexaAIOne.Dockerfile
+            args: # override default args
+                SERVER_NAME: ${SERVER_NAME:-localhost}
+                COMPANY: ${COMPANY:-Company}
+                APP_PORT: ${APP_PORT:-443}
+                USER_NAME: ${USER_NAME:-admin}
+                USER_EMAIL: ${USER_EMAIL:-admin@example.com}
+                USER_PASSWORD: ${USER_PASSWORD:-34234234324324}
+        image: ubuntu:22.04
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '${APP_PORT:-443}:443'
+        restart: always
+        networks:
+            - NexaAIOne
+        depends_on:
+            - redis
+            - pgsql
+    redis:
+        image: 'redis:alpine'
+        ports:
+            - '${REDIS_PORT:-6379}:6379'
+        volumes:
+            - 'NexaAIOne-redis:/data'
+        networks:
+            - NexaAIOne
+        healthcheck:
+            test:
+                - CMD
+                - redis-cli
+                - ping
+            retries: 3
+            timeout: 5s
+    pgsql:
+        # image: 'postgres:15'
+        image: 'ankane/pgvector'
+        ports:
+            - '${FORWARD_DB_PORT:-5432}:5432'
+        environment:
+            PGPASSWORD: '${DB_PASSWORD:-secret}'
+            POSTGRES_DB: '${DB_DATABASE}'
+            POSTGRES_USER: '${DB_USERNAME}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+        volumes:
+            - 'NexaAIOne-pgsql:/var/lib/postgresql/data'
+#            - './docker/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
+        networks:
+            - NexaAIOne
+        healthcheck:
+            test:
+                - CMD
+                - pg_isready
+                - '-q'
+                - '-d'
+                - '${DB_DATABASE}'
+                - '-U'
+                - '${DB_USERNAME}'
+            retries: 3
+            timeout: 5s
+volumes:
+    NexaAIOne-redis:
+        driver: local
+    NexaAIOne-pgsql:
+        driver: local
+
+networks:
+    NexaAIOne:
+        driver: bridge
