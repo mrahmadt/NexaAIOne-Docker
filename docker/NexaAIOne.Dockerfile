@@ -96,7 +96,9 @@ RUN chown -R www-data:www-data /var/www/html/NexaAIOne \
     && su www-data -s /bin/bash -c "php artisan view:cache" \
     && su www-data -s /bin/bash -c "php artisan storage:link" \
     && su www-data -s /bin/bash -c "php artisan optimize" \
-    && su www-data -s /bin/bash -c "php artisan horizon:publish"
+    && su www-data -s /bin/bash -c "php artisan horizon:publish" \
+    && chown -R www-data:www-data /var/www/html/NexaAIOne \
+    && chmod -R 777 /var/www/html/NexaAIOne/storage/logs
 
 
 EXPOSE $APP_PORT
